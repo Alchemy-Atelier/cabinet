@@ -1,8 +1,22 @@
 mod api;
 mod mdoel;
+mod error;
+mod business;
+
+use std::sync::Arc;
 
 use axum::{routing::get, Router};
 use env_logger::{Builder, Target};
+
+// 定义一个共享的结构体
+#[derive(Clone)]
+pub struct AppState {
+    // 这里可以包含任何你需要共享的数据
+    // 例如数据库连接池、配置信息等
+    db_pool: Arc<sqlx::SqlitePool>,
+}
+
+
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -15,7 +29,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     log::info!("Database connected");
 
     // server init
-    let app = router();
+    let app_state = AppState {
+        db_pool: Arc::new(_pool),
+    };
+    let app = router(app_state);
     let listener = tokio::net::TcpListener::bind("0.0.0.0:9512").await.unwrap();
 
     log::info!("Server running on");
@@ -26,10 +43,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 /// build router
-fn router() -> Router {
+fn router(app_state:AppState) -> Router {
     Router::new()
         .route("/test", get(|| async { "Hello, World!" }))
-        .route("/", get(api::index::index))
+        .route("/", get(api::index::index)).with_state(app_state)
 }
 
 /// init logger
