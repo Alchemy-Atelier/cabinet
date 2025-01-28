@@ -1,11 +1,11 @@
 mod api;
-mod mdoel;
-mod error;
 mod business;
+mod error;
+mod mdoel;
 
 use std::sync::Arc;
 
-use axum::{routing::get, Router};
+use axum::{response::IntoResponse, routing::get, Router};
 use env_logger::{Builder, Target};
 
 // 定义一个共享的结构体
@@ -16,15 +16,13 @@ pub struct AppState {
     db_pool: Arc<sqlx::SqlitePool>,
 }
 
-
-
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // log init
     logger();
 
     // db init
-    let _pool = mdoel::db::get_pool().await.unwrap();
+    let _pool = mdoel::db::init().await.unwrap();
 
     log::info!("Database connected");
 
@@ -43,10 +41,29 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 /// build router
-fn router(app_state:AppState) -> Router {
+fn router(app_state: AppState) -> Router {
     Router::new()
         .route("/test", get(|| async { "Hello, World!" }))
-        .route("/", get(api::index::index)).with_state(app_state)
+        .route(
+            "/",
+            get(|| async {
+                // 重定向到 /index/1/10
+                // 构造一个重定向的响应出现异常就返回 500
+                axum::http::Response::builder()
+                    .status(axum::http::StatusCode::FOUND)
+                    .header("location", "/index/1/10")
+                    .body(axum::body::Body::empty())
+                    .unwrap_or_else(|_e| {
+                        (
+                            axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                            "Internal Server Error",
+                        )
+                            .into_response()
+                    })
+            }),
+        )
+        .route("/index/:page/:size", get(api::index::index))
+        .with_state(app_state)
 }
 
 /// init logger

@@ -233,6 +233,8 @@ dependencies = [
  "axum-extra",
  "env_logger",
  "log",
+ "serde",
+ "serde_json",
  "sqlx",
  "thiserror",
  "tokio",
