@@ -42,7 +42,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 /// build router
 fn router(app_state: AppState) -> Router {
-    Router::new()
+    let router=Router::new()
         .route("/test", get(|| async { "Hello, World!" }))
         .route(
             "/",
@@ -63,7 +63,11 @@ fn router(app_state: AppState) -> Router {
             }),
         )
         .route("/index/:page/:size", get(api::index::index))
-        .with_state(app_state)
+        .with_state(app_state.clone());
+
+     // todo! 构建其他的部分的路由,比如获取单个示例以及对示例的增删改查
+     business::curd::service::add_router(router, app_state)
+
 }
 
 /// init logger
